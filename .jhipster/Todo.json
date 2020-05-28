@@ -19,7 +19,7 @@
   "service": "serviceClass",
   "entityTableName": "todo",
   "databaseType": "mongodb",
-  "readOnly": true,
+  "readOnly": false,
   "jpaMetamodelFiltering": false,
   "pagination": "infinite-scroll"
 }

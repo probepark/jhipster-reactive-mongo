@@ -83,6 +83,86 @@ public class TodoResourceIT {
     }
 
     @Test
+    public void createTodo() throws Exception {
+        int databaseSizeBeforeCreate = todoRepository.findAll().collectList().block().size();
+        // Create the Todo
+        TodoDTO todoDTO = todoMapper.toDto(todo);
+        webTestClient.post().uri("/api/todos")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(TestUtil.convertObjectToJsonBytes(todoDTO))
+            .exchange()
+            .expectStatus().isCreated();
+
+        // Validate the Todo in the database
+        List<Todo> todoList = todoRepository.findAll().collectList().block();
+        assertThat(todoList).hasSize(databaseSizeBeforeCreate + 1);
+        Todo testTodo = todoList.get(todoList.size() - 1);
+        assertThat(testTodo.getTitle()).isEqualTo(DEFAULT_TITLE);
+        assertThat(testTodo.getDescription()).isEqualTo(DEFAULT_DESCRIPTION);
+    }
+
+    @Test
+    public void createTodoWithExistingId() throws Exception {
+        int databaseSizeBeforeCreate = todoRepository.findAll().collectList().block().size();
+
+        // Create the Todo with an existing ID
+        todo.setId("existing_id");
+        TodoDTO todoDTO = todoMapper.toDto(todo);
+
+        // An entity with an existing ID cannot be created, so this API call must fail
+        webTestClient.post().uri("/api/todos")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(TestUtil.convertObjectToJsonBytes(todoDTO))
+            .exchange()
+            .expectStatus().isBadRequest();
+
+        // Validate the Todo in the database
+        List<Todo> todoList = todoRepository.findAll().collectList().block();
+        assertThat(todoList).hasSize(databaseSizeBeforeCreate);
+    }
+
+
+    @Test
+    public void checkTitleIsRequired() throws Exception {
+        int databaseSizeBeforeTest = todoRepository.findAll().collectList().block().size();
+        // set the field null
+        todo.setTitle(null);
+
+        // Create the Todo, which fails.
+        TodoDTO todoDTO = todoMapper.toDto(todo);
+
+
+        webTestClient.post().uri("/api/todos")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(TestUtil.convertObjectToJsonBytes(todoDTO))
+            .exchange()
+            .expectStatus().isBadRequest();
+
+        List<Todo> todoList = todoRepository.findAll().collectList().block();
+        assertThat(todoList).hasSize(databaseSizeBeforeTest);
+    }
+
+    @Test
+    public void checkDescriptionIsRequired() throws Exception {
+        int databaseSizeBeforeTest = todoRepository.findAll().collectList().block().size();
+        // set the field null
+        todo.setDescription(null);
+
+        // Create the Todo, which fails.
+        TodoDTO todoDTO = todoMapper.toDto(todo);
+
+
+        webTestClient.post().uri("/api/todos")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(TestUtil.convertObjectToJsonBytes(todoDTO))
+            .exchange()
+            .expectStatus().isBadRequest();
+
+        List<Todo> todoList = todoRepository.findAll().collectList().block();
+        assertThat(todoList).hasSize(databaseSizeBeforeTest);
+    }
+
+    @Test
     public void getAllTodos() {
         // Initialize the database
         todoRepository.save(todo).block();
@@ -122,5 +202,70 @@ public class TodoResourceIT {
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
             .expectStatus().isNotFound();
+    }
+
+    @Test
+    public void updateTodo() throws Exception {
+        // Initialize the database
+        todoRepository.save(todo).block();
+
+        int databaseSizeBeforeUpdate = todoRepository.findAll().collectList().block().size();
+
+        // Update the todo
+        Todo updatedTodo = todoRepository.findById(todo.getId()).block();
+        updatedTodo
+            .title(UPDATED_TITLE)
+            .description(UPDATED_DESCRIPTION);
+        TodoDTO todoDTO = todoMapper.toDto(updatedTodo);
+
+        webTestClient.put().uri("/api/todos")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(TestUtil.convertObjectToJsonBytes(todoDTO))
+            .exchange()
+            .expectStatus().isOk();
+
+        // Validate the Todo in the database
+        List<Todo> todoList = todoRepository.findAll().collectList().block();
+        assertThat(todoList).hasSize(databaseSizeBeforeUpdate);
+        Todo testTodo = todoList.get(todoList.size() - 1);
+        assertThat(testTodo.getTitle()).isEqualTo(UPDATED_TITLE);
+        assertThat(testTodo.getDescription()).isEqualTo(UPDATED_DESCRIPTION);
+    }
+
+    @Test
+    public void updateNonExistingTodo() throws Exception {
+        int databaseSizeBeforeUpdate = todoRepository.findAll().collectList().block().size();
+
+        // Create the Todo
+        TodoDTO todoDTO = todoMapper.toDto(todo);
+
+        // If the entity doesn't have an ID, it will throw BadRequestAlertException
+        webTestClient.put().uri("/api/todos")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(TestUtil.convertObjectToJsonBytes(todoDTO))
+            .exchange()
+            .expectStatus().isBadRequest();
+
+        // Validate the Todo in the database
+        List<Todo> todoList = todoRepository.findAll().collectList().block();
+        assertThat(todoList).hasSize(databaseSizeBeforeUpdate);
+    }
+
+    @Test
+    public void deleteTodo() {
+        // Initialize the database
+        todoRepository.save(todo).block();
+
+        int databaseSizeBeforeDelete = todoRepository.findAll().collectList().block().size();
+
+        // Delete the todo
+        webTestClient.delete().uri("/api/todos/{id}", todo.getId())
+            .accept(MediaType.APPLICATION_JSON)
+            .exchange()
+            .expectStatus().isNoContent();
+
+        // Validate the database contains one less item
+        List<Todo> todoList = todoRepository.findAll().collectList().block();
+        assertThat(todoList).hasSize(databaseSizeBeforeDelete - 1);
     }
 }

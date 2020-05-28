@@ -73,6 +73,11 @@ export const Todo = (props: ITodoProps) => {
     <div>
       <h2 id="todo-heading">
         <Translate contentKey="jhipsterApp.todo.home.title">Todos</Translate>
+        <Link to={`${match.url}/new`} className="btn btn-primary float-right jh-create-entity" id="jh-create-entity">
+          <FontAwesomeIcon icon="plus" />
+          &nbsp;
+          <Translate contentKey="jhipsterApp.todo.home.createLabel">Create new Todo</Translate>
+        </Link>
       </h2>
       <div className="table-responsive">
         <InfiniteScroll
@@ -115,6 +120,18 @@ export const Todo = (props: ITodoProps) => {
                           <FontAwesomeIcon icon="eye" />{' '}
                           <span className="d-none d-md-inline">
                             <Translate contentKey="entity.action.view">View</Translate>
+                          </span>
+                        </Button>
+                        <Button tag={Link} to={`${match.url}/${todo.id}/edit`} color="primary" size="sm">
+                          <FontAwesomeIcon icon="pencil-alt" />{' '}
+                          <span className="d-none d-md-inline">
+                            <Translate contentKey="entity.action.edit">Edit</Translate>
+                          </span>
+                        </Button>
+                        <Button tag={Link} to={`${match.url}/${todo.id}/delete`} color="danger" size="sm">
+                          <FontAwesomeIcon icon="trash" />{' '}
+                          <span className="d-none d-md-inline">
+                            <Translate contentKey="entity.action.delete">Delete</Translate>
                           </span>
                         </Button>
                       </div>
